@@ -1,0 +1,20 @@
+
+<launch>
+  
+  <arg name = "gui" default = "false" />
+
+  <param name="robot_description" command="$(find xacro)/xacro '$(find hiwin_ra610_1869_gb_support)/urdf/ra610_1869_gb.xacro'"/>
+  <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher"/>
+
+  <node unless="$(arg gui)" name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher" ></node>
+
+  <node if="$(arg gui)" name="joint_state_publisher" pkg="joint_state_piblisher_gui" />
+
+  <!-- Show in Rviz   -->
+  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find hiwin_ra610_1869_gb_support)/config/ra610_1869.rviz"/>
+
+
+
+
+  
+</launch>
