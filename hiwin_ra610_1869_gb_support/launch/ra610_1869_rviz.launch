@@ -10,7 +10,6 @@
 
   <node if="$(arg gui)" name="joint_state_publisher" pkg="joint_state_piblisher_gui" />
 
-  <!-- Show in Rviz   -->
   <node name="rviz" pkg="rviz" type="rviz" args="-d $(find hiwin_ra610_1869_gb_support)/config/ra610_1869.rviz"/>
 
 

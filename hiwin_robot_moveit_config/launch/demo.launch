@@ -1,6 +1,6 @@
 <launch>
     <arg name="robot_name" default="robot01"/>
-    <arg name="manipulator_model" default="ra610_1355_gb"/>
+    <arg name="manipulator_model" default="ra610_1869_gb"/>
     <arg name="manipulator_name" default="manipulator"/>
     <arg name="gripper_model" default="xeg_16"/>
     <arg name="gripper_name" default="gripper"/>
