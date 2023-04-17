@@ -1,0 +1,10 @@
+<launch>
+<!-- launch fake robot and moveit -->
+<!-- <include file="$(find hiwin_robot_moveit_config)/launch/demo.launch" /> -->
+
+<!-- Run control node -->
+<node name="control_node" pkg="arm_control" type="control_node" output="screen" />
+<!-- Show Panting Trajectory -->
+<node name="show_paint" pkg="arm_control" type="show_paint" output="screen" />
+
+</launch>

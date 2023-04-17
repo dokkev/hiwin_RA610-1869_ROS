@@ -14,7 +14,8 @@ from std_srvs.srv import Empty, EmptyResponse
 from std_msgs.msg   import Float32,Float64
 from visualization_msgs.msg import Marker
 from geometry_msgs.msg import TwistStamped, Pose, Point, Vector3, Quaternion
-from std_msgs.msg import Header, ColorRGBA, String
+from std_msgs.msg import Header, ColorRGBA, String, Bool
+import shape_msgs.msg
 
 
 class Control:
@@ -26,16 +27,16 @@ class Control:
         moveit_commander.roscpp_initialize(sys.argv)
         self.robot = moveit_commander.RobotCommander()
         self.scene = moveit_commander.PlanningSceneInterface()
+        self.request = moveit_msgs.msg.MotionPlanRequest()
         self.br = tf2_ros.TransformBroadcaster()
         self.static_br = tf2_ros.StaticTransformBroadcaster
 
         # Marker for Paint
         self.marker = Marker()
         self.maker_pub = rospy.Publisher("paint_marker", Marker, queue_size=10)
-
+        self.paint_status_pub = rospy.Publisher("paint_status", Bool, queue_size=10)
 
         # Generate ROS services
-        self.service_ready = rospy.Service("ready", Empty, self.ready)
         self.service_home = rospy.Service("home", Empty, self.home)
         self.service_paint_ready = rospy.Service("paint_ready",Empty,self.paint_ready)
         self.service_pose_move = rospy.Service("pose_move",Empty,self.pose_move)
@@ -46,10 +47,13 @@ class Control:
         self.service_joint_add = rospy.Service("joint_add",Empty,self.joint_add)
         self.service_joint_move = rospy.Service("joint_move",Empty,self.joint_move)
         self.service_paint = rospy.Service("paint",Empty,self.paint)
+        self.service_move_cartesian_path = rospy.Service("move_cartesian_path",Empty,self.move_cartesian_path)
+
 
         group_name = 'manipulator'
         self.group = moveit_commander.MoveGroupCommander(group_name)
         self.scene = moveit_commander.PlanningSceneInterface()
+        self.request.group_name = group_name
         display_trajectory_publisher = rospy.Publisher("move_group/display_planned_path", moveit_msgs.msg.DisplayTrajectory, queue_size=20)
         self.display_trajectory_publisher = display_trajectory_publisher
 
@@ -69,32 +73,29 @@ class Control:
         print("Hello! This is an arm control node of the Hiwin robot. \n")
 
         paint_ready = rospy.ServiceProxy("paint_ready",Empty)
-        pose_move = rospy.ServiceProxy("pose_move",Empty)
-        pose_add = rospy.ServiceProxy("pose_add",Empty)
-        ee_pose_add = rospy.ServiceProxy("ee_pose_add",Empty)
         get_current_joint_values = rospy.ServiceProxy("get_current_joint_values",Empty)
         get_current_pose_values = rospy.ServiceProxy("get_current_pose_values",Empty)
-        joint_move = rospy.ServiceProxy("joint_move",Empty)
-        joint_add = rospy.ServiceProxy("joint_add",Empty)
-        paint = rospy.ServiceProxy("paint",Empty)
         go_home = rospy.ServiceProxy("home",Empty)
+
 
 
         ###################
         ## initial setup ##
         ###################
-
-        # setup moveit enviroment
-        self.setup_env()
+        
+        self.paint_status = False
         # sleep
         rospy.sleep(1)
         # move to default position
-        # paint_ready()
-        # print current joint value
         go_home()
+        # print current joint value
         get_current_joint_values()
         get_current_pose_values()
 
+        # setup moveit enviroment
+        self.setup_env()
+
+  
 
 
     def get_current_joint_values(self,val):
@@ -108,22 +109,20 @@ class Control:
     def get_current_pose_values(self,val):
         p = self.group.get_current_pose(eef_link)
         euler = self.Quaternion_to_Euler(p.pose.orientation)
-        position = {"x":p.pose.position.x,"y":p.pose.position.y,"z":p.pose.position.z}
-        quat = {"x":p.pose.orientation.x,"y":p.pose.orientation.y,"z":p.pose.orientation.z,"w":p.pose.orientation.w}
+        # round to 3 decimal places
+        position = {"x":round(p.pose.position.x,3),"y":round(p.pose.position.y,3),"z":round(p.pose.position.z,3)}
+        quat = {"x":round(p.pose.orientation.x,3),"y":round(p.pose.orientation.y,3),"z":round(p.pose.orientation.z,3),"w":round(p.pose.orientation.w,3)}
         print("\n====== Current Pose =====")
-        print("Position:\n",position)
-        print("Orientation (Quaternion):\n",quat)
-        print("Orientation (Euler (rad)):\n",euler)
+        print("Position:\n ", position)
+        # print("Orientation (Quaternion):\n",quat)
+        print("Orientation (Euler (deg)):\n",euler)
 
         return []
     
-    def PlanIt(self):
-        """
-        Plan a trajectory, Stop the robot, and clear the pose targets
-        """
-        self.plan = self.group.go(wait=True)
-        self.group.stop()
-        self.group.clear_pose_targets()
+
+    def update(self):
+        current_state = self.robot.get_current_state()
+        self.request.start_state.joint_state = current_state.joint_state
     
 
     def Quaternion_to_Euler(self,quaternion):
@@ -134,7 +133,7 @@ class Control:
         euler_rad = tf.transformations.euler_from_quaternion([q.x,q.y,q.z,q.w])
         euler_deg = [self.rad(euler_rad[0]),self.rad(euler_rad[1]),self.rad(euler_rad[2])]
         # add dictionary index rx, ry, rz
-        euler_deg = {"Rx":euler_deg[0],"Ry":euler_deg[1],"Rz":euler_deg[2]}
+        euler_deg = {"Rx":round(euler_deg[0],3),"Ry":round(euler_deg[1],3),"Rz":round(euler_deg[2],3)}
 
         return euler_deg
 
@@ -153,51 +152,121 @@ class Control:
         return rad
     
 
-    def home(self,val):
-        """
-        Set all Joint angles to 0
-        """
-        home_joint = [0,0,0,0,0,0]
-        joint_goal = self.group.get_current_joint_values()
-        joint_goal = home_joint
-        self.PlanIt()
-       
-        return []
-        
+    def paint_ready(self,val):
 
+        # move to paint ready position
+        self.set_cartesian_path([0,1.3,0.7])
+        # set the orientation of the end effector
+        self.pose_control([0,0,0])
+    
+
+        return []
+    
     def paint(self,val):
         paint_ready = rospy.ServiceProxy("paint_ready",Empty)
-        self.relative_pose_control([0.2,0.25,0])
-        self.paint_down()
-
         paint_ready()
-        self.relative_pose_control([0.1,0.25,0])
-        self.paint_down()
-   
-        paint_ready()
-        self.relative_pose_control([0,0.25,0])
-        self.paint_down()
 
-        paint_ready()
-        self.relative_pose_control([-0.1,0.25,0])
-        self.paint_down()
+        # paint parameters
+        top = 1.5
+        bottom = 0.3
+        right = 1
+        left = -1
+        down_increment = 0.1
+        up_increment = 0.05
+        side_increment = 0.4
+        painting_num = (top - bottom) / (down_increment - up_increment)
+        side_num = (right - left) / side_increment
 
-        paint_ready()
-        self.relative_pose_control([-0.2,0.25,0])
-        self.paint_down()
-
-
+        
+        self.set_cartesian_path([right,1.669,top])
+        for i in range(int(side_num)+1):
+            x = right - i * side_increment
+            self.set_cartesian_path([x, 1.669, top])
+            self.up_down_motion(painting_num,down_increment,up_increment)
+            paint_ready()
 
 
         return []
 
-    def paint_down(self):
-     
-        rospy.sleep(0.5)
-        for i in range(9):
-            self.ee_pose_control([0,0,-0.1])
-        rospy.sleep(0.5)
+
+    def up_down_motion(self,painting_num,down_increment,up_increment):
+        self.paint_status = True
+        self.paint_status_pub.publish(self.paint_status)
+        for i in range(int(painting_num)):
+            self.cartesian_path([0,0,-down_increment])
+            self.cartesian_path([0,0,up_increment])
+        self.paint_status = False
+        self.paint_status_pub.publish(self.paint_status)
+        
+
+
+    
+    def home(self,val):
+        self.joint_goal = self.group.get_current_joint_values()
+        self.joint_goal[0] = 0
+        self.joint_goal[1] = self.deg(70)
+        self.joint_goal[2] = self.deg(-75)
+        self.joint_goal[3] = 0
+        self.joint_goal[4] = 0
+        self.joint_goal[5] = 0
+        self.group.go(self.joint_goal, wait=True)
+        self.group.stop()
+        self.group.clear_pose_targets()
+
+
         return []
+
+    def cartesian_path(self, pose_goal, scale=1.0):
+
+        waypoints = []
+
+        wpose = self.group.get_current_pose().pose
+        wpose.position.x += pose_goal[0] 
+        wpose.position.y += pose_goal[1]
+        wpose.position.z += pose_goal[2]
+        waypoints.append(copy.deepcopy(wpose))
+
+        (plan, fraction) = self.group.compute_cartesian_path(waypoints, 0.01, 0.0, True)  # waypoints to follow  # eef_step # jump_threshold
+
+        self.group.execute(plan, wait=True)
+        self.group.stop()
+        self.group.clear_pose_targets()
+ 
+
+
+    def set_cartesian_path(self, pose_goal, scale=1.0):
+
+        waypoints = []
+
+        wpose = self.group.get_current_pose().pose
+        wpose.position.x = pose_goal[0] 
+        wpose.position.y = pose_goal[1]
+        wpose.position.z = pose_goal[2]
+        waypoints.append(copy.deepcopy(wpose))
+
+        (plan, fraction) = self.group.compute_cartesian_path(waypoints, 0.01, 0.0, True)  # waypoints to follow  # eef_step # jump_threshold
+
+        self.group.execute(plan, wait=True)
+        self.group.stop()
+        self.group.clear_pose_targets()
+        self.update()
+
+
+    def move_cartesian_path(self,val):
+        # user input
+        x = float(input("Enter x: "))
+        y = float(input("Enter y: "))
+        z = float(input("Enter z: "))
+        # call cartesian path function
+        self.cartesian_path([x,y,z])
+        
+        get_current_pose_values = rospy.ServiceProxy("get_current_pose_values",Empty)
+        get_current_pose_values()
+
+        return []
+
+
+
 
     def joint_control(self,j_mat):
         print("..Executing movement")
@@ -229,7 +298,7 @@ class Control:
 
     def ee_pose_control(self,p_mat):
         print("..Executing movement")
-        self.pose_goal = self.group.get_current_pose(eef_link)
+        self.pose_goal = self.group.get_current_pose(eef_link)  
         self.pose_goal.pose.position.x += p_mat[0]
         self.pose_goal.pose.position.y += p_mat[1]
         self.pose_goal.pose.position.z += p_mat[2]
@@ -257,7 +326,10 @@ class Control:
         self.pose_goal.pose.position.y = float(y_in)
         self.pose_goal.pose.position.z = float(z_in)
         self.group.set_pose_target(self.pose_goal)
-        self.PlanIt()
+        self.plan = self.group.go(wait=True)
+        self.group.stop()
+        self.group.clear_pose_targets()
+
 
 
         return []
@@ -280,6 +352,21 @@ class Control:
         
         return []
     
+    def pose_control(self,val):
+        self.pose_goal = self.group.get_current_pose(eef_link)
+        self.pose_goal.pose.position.x += val[0]
+        self.pose_goal.pose.position.y += val[1]
+        self.pose_goal.pose.position.z += val[2]
+        self.pose_goal.pose.orientation.x = 0.0
+        self.pose_goal.pose.orientation.y = 0.0
+        self.pose_goal.pose.orientation.z = 0.0
+        self.pose_goal.pose.orientation.w = 1.0
+        self.group.set_pose_target(self.pose_goal)
+        self.plan = self.group.go(wait=True)
+        self.group.stop()
+        self.group.clear_pose_targets()
+
+    
 
     def ee_pose_add(self,val):
         print("Execute a pose movement by adding desired values from current position while fixed orientation ")
@@ -292,10 +379,10 @@ class Control:
         self.pose_goal.pose.position.y += float(y_in)
         self.pose_goal.pose.position.z += float(z_in)
         # fixed orientation
-        self.pose_goal.pose.orientation.x += 0.0
-        self.pose_goal.pose.orientation.y += 0.0
-        self.pose_goal.pose.orientation.z += 0.0
-        self.pose_goal.pose.orientation.w += 0.0
+        self.pose_goal.pose.orientation.x = 0.0
+        self.pose_goal.pose.orientation.y = 0.0
+        self.pose_goal.pose.orientation.z = 0.0
+        self.pose_goal.pose.orientation.w = 1.0
         self.group.set_pose_target(self.pose_goal)
         self.plan = self.group.go(wait=True)
         self.group.stop()
@@ -354,23 +441,6 @@ class Control:
         self.get_current_joint_values(val)
      
         return []
-
-
-    def paint_ready(self,val):
-        self.joint_goal = self.group.get_current_joint_values()
-        self.joint_goal[0] = 0
-        self.joint_goal[1] = self.deg(-45)
-        self.joint_goal[2] = 0
-        self.joint_goal[3] = self.deg(-135)
-        self.joint_goal[4] = 0
-        self.joint_goal[5] = self.deg(180)
-        self.joint_goal[6] = self.deg(-45)
-        self.group.go(self.joint_goal, wait=True)
-        self.group.stop()
-        self.group.clear_pose_targets()
-
-
-        return []
     
     def setup_env(self):
 
@@ -388,7 +458,8 @@ class Control:
         # tf.transform.rotation.w = 1
         # self.static_br.sendTransform(tf)
 
-
+        ## Chamber size
+        # 3.6 m x 3.6 m x 2.4 m
 
 
         ## Add objects into Moveit enviroment
@@ -410,13 +481,30 @@ class Control:
 
 
         # Canvas
-        canvas_size = (0.02, 0.6, 1.0)
+        canvas_size = (2.4, 0.02, 1.6)
         self.canvas = geometry_msgs.msg.PoseStamped()
         self.canvas.header.frame_id = 'world'
-        self.canvas.pose.position.x = 0.7
-        self.canvas.pose.position.y = 0.
-        self.canvas.pose.position.z = 0.3
+        self.canvas.pose.position.x = 0
+        self.canvas.pose.position.y = 1.7 - canvas_size[1]/2
+        self.canvas.pose.position.z = canvas_size[2]/2
         # self.scene.add_box("canvas", self.canvas, canvas_size)
+
+        collision_canvas = moveit_msgs.msg.CollisionObject()
+        collision_canvas.id = 'canvas'
+        collision_canvas.header.frame_id = 'world'
+        box = shape_msgs.msg.SolidPrimitive()
+        box.type = box.BOX
+        box.dimensions = [canvas_size[0], canvas_size[1], canvas_size[2]]
+        collision_canvas.primitives.append(box)
+        pose = geometry_msgs.msg.PoseStamped()
+        pose.header.frame_id = 'world'
+        pose.pose.position.x = 0
+        pose.pose.position.y = 1.7 - canvas_size[1]/2
+        pose.pose.position.z = canvas_size[2]/2
+        collision_canvas.primitive_poses.append(pose.pose)
+        self.scene.add_object(collision_canvas)
+
+
 
         # Canvas2 45 deg rotation
         self.canvas2 = geometry_msgs.msg.PoseStamped()
@@ -458,12 +546,12 @@ class Control:
         # self.box_pose.pose.position.z = 0.15/4
         # self.scene.add_box("obstacle", self.box_pose, size=(grab_angle/2, 0.15/2, 0.15/2))
 
-        
+
+
+
 
        
 
 if __name__ == "__main__":
-  
     Control()
     rospy.spin()
-        

@@ -129,6 +129,10 @@
         </collision>
     </link>
 
+    <!-- end_effector frame -->
+    <link name="${prefix}end_effector" />
+   
+
     <!-- joints: main serial chain -->
     <joint name="${prefix}joint_1" type="revolute">
         <origin xyz="0.0 0.0 0.1965" rpy="0.0 0.0 0.0" />
@@ -178,6 +182,11 @@
         <limit lower="-6.28" upper="6.28" effort="0" velocity="12.566"/>
     </joint>
 
+    <joint name="${prefix}end_effector" type="fixed">
+        <origin xyz="0 0.480 0.0" rpy="0.0 0.0 0.0" />
+        <parent link="${prefix}link_6" />
+        <child link="${prefix}end_effector" />
+    </joint>
     <!-- ROS-Industrial 'base' frame: base_link to HIWIN World Coordinates transform -->
     <link name="${prefix}base" />
     <joint name="${prefix}base_link-base" type="fixed">
@@ -189,7 +198,7 @@
     <!-- ROS-Industrial 'flange' frame: attachment point for EEF models -->
     <link name="${prefix}flange" />
     <joint name="${prefix}joint_6-flange" type="fixed">
-      <origin xyz="0 0.016 0" rpy="0 0 0" />
+      <origin xyz="0 0 0" rpy="0 0 0" />
       <parent link="${prefix}link_6" />
       <child link="${prefix}flange" />
     </joint>
@@ -198,10 +207,12 @@
     <link name="${prefix}tool0" />
     <joint name="${prefix}link_6-tool0" type="fixed">
       <!-- <origin xyz="0 0.020 0.0" rpy="0.0 ${-pi/2.0} ${-pi/2.0}" /> -->
-        <origin xyz="0 0.020 0.0" rpy="0.0 0.0 0.0" />
+        <origin xyz="0 0.480 0.0" rpy="0.0 0.0 0.0" />
       <parent link="${prefix}link_6" />
       <child link="${prefix}tool0" />
     </joint>
+
+
 
   </xacro:macro>
 </robot>

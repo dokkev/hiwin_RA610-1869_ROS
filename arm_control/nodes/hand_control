@@ -1,0 +1,93 @@
+import numpy as np
+import cv2
+import mediapipe as mp
+from geometry_msgs.msg import PoseStamped
+import time
+
+
+WIDTH = 1280
+HEIGHT = 720
+
+BaseOptions = mp.tasks.BaseOptions
+GestureRecognizer = mp.tasks.vision.GestureRecognizer
+GestureRecognizerOptions = mp.tasks.vision.GestureRecognizerOptions
+GestureRecognizerResult = mp.tasks.vision.GestureRecognizerResult
+VisionRunningMode = mp.tasks.vision.RunningMode
+mp_draw = mp.solutions.drawing_utils
+mp_styles = mp.solutions.drawing_styles
+mp_hands = mp.solutions.hands
+
+
+# Callback function for gesture recognition
+def print_result(result: GestureRecognizerResult, image: mp.Image, timestamp_ms: int):
+    # print('gesture recognition result: {}'.format(result))
+    if result.handedness:
+        print(result.gestures[0][0].category_name)
+
+        # mp.Image to cv2 image
+        image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+        
+        # print(result.hand_landmarks)
+        # image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+        # mp_draw.draw_landmarks(
+        #         cv_image, 
+        #         result.hand_landmarks, 
+        #         mp_hands.HAND_CONNECTIONS,
+        #         mp_styles.get_default_hand_landmarks_style(), 
+        #         mp_styles.get_default_hand_connections_style()
+        #     )
+
+        # show the image
+
+
+    
+
+
+
+
+def main() :
+
+    cap = cv2.VideoCapture(0)
+    if cap.isOpened() == 0:
+        exit(-1)
+
+
+    # Set the video resolution to HD720
+    cap.set(cv2.CAP_PROP_FRAME_WIDTH, WIDTH)
+    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, HEIGHT)
+    # STEP 2: Create an GestureRecognizer object.
+    
+    options = GestureRecognizerOptions(
+    base_options=BaseOptions(model_asset_path='gesture_recognizer.task'),
+    running_mode=VisionRunningMode.LIVE_STREAM,
+    result_callback=print_result
+    )
+
+
+    with GestureRecognizer.create_from_options(options) as recognizer:
+
+        while cap.isOpened():
+            # Get a new frame from camera
+            sucess, frame = cap.read()
+
+            image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=image)
+            
+  
+            width = image.shape[0]
+            height = image.shape[1]
+ 
+            # results = recognizer.recognize(mp_image)
+            frame_timestamp_ms = int(time.time() * 1000)
+            results = recognizer.recognize_async(mp_image, frame_timestamp_ms)
+     
+
+            # hand_landmarks = np.array(results.hand_landmarks)
+            image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+            
+       
+        
+
+
+if __name__ == "__main__":
+    main()
