@@ -4,6 +4,7 @@ import tf
 from visualization_msgs.msg import Marker, MarkerArray
 from std_msgs.msg import Bool
 
+
 # set painting_status to False
 global painting_status
 painting_status = False
@@ -33,7 +34,7 @@ while not rospy.is_shutdown():
         # You can use these values to perform various tasks, such as controlling the robot or publishing visualizations.
 
         # Create a marker with a sphere shape at the position of the end effector
-        print("y: ", trans[1])
+    
         if trans[1] > 1.666:
             marker = Marker()
             marker.header.frame_id = 'world'

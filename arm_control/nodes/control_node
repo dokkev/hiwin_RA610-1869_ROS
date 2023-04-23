@@ -6,14 +6,14 @@ import rospy
 import moveit_commander
 import moveit_msgs.msg
 import geometry_msgs.msg
-import tf2_ros
+
 import tf
 from math import pi
 from std_msgs.msg import String
 from std_srvs.srv import Empty, EmptyResponse
 from std_msgs.msg   import Float32,Float64
 from visualization_msgs.msg import Marker
-from geometry_msgs.msg import TwistStamped, Pose, Point, Vector3, Quaternion
+from geometry_msgs.msg import TwistStamped, Pose, Point, Vector3, Quaternion, TransformStamped
 from std_msgs.msg import Header, ColorRGBA, String, Bool
 import shape_msgs.msg
 
@@ -28,13 +28,20 @@ class Control:
         self.robot = moveit_commander.RobotCommander()
         self.scene = moveit_commander.PlanningSceneInterface()
         self.request = moveit_msgs.msg.MotionPlanRequest()
-        self.br = tf2_ros.TransformBroadcaster()
-        self.static_br = tf2_ros.StaticTransformBroadcaster
+        self.tf_br = tf.TransformBroadcaster()
+
 
         # Marker for Paint
         self.marker = Marker()
         self.maker_pub = rospy.Publisher("paint_marker", Marker, queue_size=10)
         self.paint_status_pub = rospy.Publisher("paint_status", Bool, queue_size=10)
+        self.ee_pub = rospy.Publisher("ee_pose", Pose, queue_size=1)
+
+
+
+        # Subscriber
+        self.gesture_sub = rospy.Subscriber("gesture", String, self.gesture_callback)
+        self.finger_pose_sub = rospy.Subscriber("finger_pose", Pose, self.finger_pose_callback, queue_size=1)
 
         # Generate ROS services
         self.service_home = rospy.Service("home", Empty, self.home)
@@ -51,14 +58,18 @@ class Control:
 
 
         group_name = 'manipulator'
+        # planning_interface
+    
         self.group = moveit_commander.MoveGroupCommander(group_name)
         self.scene = moveit_commander.PlanningSceneInterface()
         self.request.group_name = group_name
         display_trajectory_publisher = rospy.Publisher("move_group/display_planned_path", moveit_msgs.msg.DisplayTrajectory, queue_size=20)
         self.display_trajectory_publisher = display_trajectory_publisher
 
+        self.counter = 0
+
         rospy.init_node('arm_control', anonymous=True)
-        self.rate = rospy.Rate(60)
+        self.rate = rospy.Rate(200)
 
         planning_frame = self.group.get_planning_frame()
         print("============ Reference frame: %s" % planning_frame)
@@ -77,13 +88,15 @@ class Control:
         get_current_pose_values = rospy.ServiceProxy("get_current_pose_values",Empty)
         go_home = rospy.ServiceProxy("home",Empty)
 
-
+        self.painter = 0
 
         ###################
         ## initial setup ##
         ###################
         
         self.paint_status = False
+        self.paint2_status = False
+        self.paint3_status = False
         # sleep
         rospy.sleep(1)
         # move to default position
@@ -96,6 +109,154 @@ class Control:
         self.setup_env()
 
   
+    def gesture_callback(self, data):
+        # print(data.data)
+        top = 1.5
+        bottom = 0.3
+        right = 1
+        left = -1
+
+        paint_ready = rospy.ServiceProxy("paint_ready",Empty)
+        counter_threshold = 50
+
+        self.gesture = data.data
+        
+        if self.gesture == "Open_Palm":
+            self.counter += 1
+            if self.counter == counter_threshold:
+                print("Open Hand")
+                self.paint_status = False
+                self.set_cartesian_path([0,1.5,0.6])
+                self.counter = 0
+
+        if self.gesture == "Closed_Fist":
+            self.counter += 1
+            if self.counter == counter_threshold:
+                print("Close Hand")
+                self.paint_status = False
+                self.paint2_status = False
+                self.paint3_status = False
+                print("Stop Painting!")
+                paint_ready()
+                self.counter = 0
+
+        if self.gesture == "Pointing_Up":
+            self.counter += 1
+            if self.counter == counter_threshold:
+                print("Pointing Up")
+                self.paint_status = True
+                self.paint2_status = False
+                self.paint3_status = False
+                print("Start Painting!")
+                self.counter = 0
+
+
+        if self.gesture == "Victory":
+            self.counter += 1
+            if self.counter == counter_threshold:
+                print("Pointing UP/Down")
+                self.paint2_status = True
+                self.paint3_status = False
+                self.counter = 0
+
+        if self.gesture == "Thumb_Up":
+            self.counter += 1
+            if self.counter == counter_threshold:
+                print("Thumb Up")
+                self.paint_status = False
+                self.paint2_status = False
+                self.paint3_status = True
+                paint_ready()
+                self.counter = 0
+           
+
+
+    def finger_pose_callback(self, msg):
+        self.finger_pose = msg
+
+        scaled_x = ((msg.position.x - 0) / (1-0)) * (2.1 - (-2.1)) + (-2.1)
+        adjusted_z = (((1-msg.position.z) - 0) / (1.8-0)) * (1.8 - (0.1)) + (0.1)
+     
+
+        translation = (scaled_x, 1.67, adjusted_z)
+        rotation = (msg.orientation.x, msg.orientation.y, msg.orientation.z, msg.orientation.w)
+        self.tf_br.sendTransform(translation, rotation, rospy.Time.now(), "finger", "world")
+        ee_pose = self.group.get_current_pose(eef_link).pose
+        self.ee_pub.publish(ee_pose)
+
+
+     
+        if self.paint_status == True:
+
+
+            waypoints = []
+            wpose = self.group.get_current_pose().pose 
+            wpose.position.x = translation[0]
+            wpose.position.y = translation[1]
+            wpose.position.z = translation[2]
+            if self.paint2_status == False:
+                wpose.orientation.x = rotation[0]
+                wpose.orientation.y = rotation[1]
+                wpose.orientation.z = rotation[2]
+                wpose.orientation.w = rotation[3]
+            waypoints.append(copy.deepcopy(wpose))
+
+            # self.group.set_joint_value_target(wpose)
+            # self.group.go(wait=True)
+            # self.group.stop()
+            # self.group.clear_pose_targets()
+     
+
+
+            (plan, fraction) = self.group.compute_cartesian_path(waypoints, 0.05, 0.0, True)  # waypoints to follow  # eef_step # jump_threshold
+            self.group.set_planning_time(1)
+            self.group.execute(plan, wait=True)
+            self.group.stop()
+            self.group.clear_pose_targets()
+          
+            self.rate.sleep()
+
+        elif self.paint3_status == True:
+             
+
+            waypoints = []
+            wpose = self.group.get_current_pose().pose 
+            wpose.position.x = translation[0]
+            wpose.position.y = translation[1]
+            wpose.position.z = translation[2]
+            wpose.orientation.x = rotation[0]
+            wpose.orientation.y = rotation[1]
+            wpose.orientation.z = rotation[2]
+            wpose.orientation.w = rotation[3]
+            waypoints.append(copy.deepcopy(wpose))
+
+            # self.group.set_joint_value_target(wpose)
+            # self.group.go(wait=True)
+            # self.group.stop()
+            # self.group.clear_pose_targets()
+
+     
+
+
+            (plan, fraction) = self.group.compute_cartesian_path(waypoints, 0.05, 0.0, True)  # waypoints to follow  # eef_step # jump_threshold
+            self.group.set_planning_time(1)
+            self.group.execute(plan, wait=True)
+            self.group.stop()
+            self.group.clear_pose_targets()
+          
+            self.rate.sleep()
+
+            self.paint3_status = False
+
+            
+
+
+
+
+
+
+     
+
 
 
     def get_current_joint_values(self,val):
@@ -190,13 +351,11 @@ class Control:
 
 
     def up_down_motion(self,painting_num,down_increment,up_increment):
-        self.paint_status = True
-        self.paint_status_pub.publish(self.paint_status)
+
         for i in range(int(painting_num)):
             self.cartesian_path([0,0,-down_increment])
             self.cartesian_path([0,0,up_increment])
-        self.paint_status = False
-        self.paint_status_pub.publish(self.paint_status)
+
         
 
 

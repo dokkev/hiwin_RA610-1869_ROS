@@ -41,8 +41,8 @@
 
   <!-- load and start controllers for trajectory control-->
   <node name="controller_manager_spawn" pkg="controller_manager" type="controller_manager" respawn="false" output="screen" args="spawn 
-  /hdt_arm/joint_state_controller
-  /hdt_arm/arm_controller" />
+  /joint_state_controller
+  /arm_controller" />
   
 
    

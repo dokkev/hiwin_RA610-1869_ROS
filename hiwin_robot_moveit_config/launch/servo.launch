@@ -1,0 +1,6 @@
+<launch>
+<!-- launch servo -->
+<include file="$(find moveit_servo)/launch/spacenav_cpp.launch" >
+    <remap from="/hiwin_robot" to="/manipulator" />
+</include>
+</launch>

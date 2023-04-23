@@ -212,6 +212,14 @@
       <child link="${prefix}tool0" />
     </joint>
 
+        <!-- ROS-Industrial 'tool0' frame: all-zeros tool frame -->
+    <link name="${prefix}ee_link" />
+    <joint name="${prefix}ee_joint" type="fixed">
+      <!-- <origin xyz="0 0.020 0.0" rpy="0.0 ${-pi/2.0} ${-pi/2.0}" /> -->
+        <origin xyz="0 0.480 0.0" rpy="0.0 0.0 0.0" />
+      <parent link="${prefix}link_6" />
+      <child link="${prefix}ee_link" />
+    </joint>
 
 
   </xacro:macro>
