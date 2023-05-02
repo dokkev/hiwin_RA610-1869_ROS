@@ -139,7 +139,7 @@
         <parent link="${prefix}base_link" />
         <child link="${prefix}link_1" />
         <axis xyz="0 0 1" />
-        <limit lower="-2.967" upper="2.967" effort="0" velocity="2.618"/>
+        <limit lower="-2.967" upper="2.967" effort="0" velocity="3.35103"/>
     </joint>
 
     <joint name="${prefix}joint_2" type="revolute">
@@ -147,7 +147,7 @@
         <parent link="${prefix}link_1" />
         <child link="${prefix}link_2" />
         <axis xyz="1 0 0" />
-        <limit lower="-2.1812" upper="1.4832" effort="0" velocity="2.618"/>
+        <limit lower="-2.1812" upper="1.4832" effort="0" velocity="3.59538"/>
     </joint>
 
     <joint name="${prefix}joint_3" type="revolute">
@@ -155,7 +155,7 @@
         <parent link="${prefix}link_2" />
         <child link="${prefix}link_3" />
         <axis xyz="1 0 0" />
-        <limit lower="-1.483" upper="3.228" effort="0" velocity="3.829"/>
+        <limit lower="-1.483" upper="3.228" effort="0" velocity="3.822"/>
     </joint>
 
     <joint name="${prefix}joint_4" type="revolute">
@@ -163,7 +163,7 @@
         <parent link="${prefix}link_3" />
         <child link="${prefix}link_4" />
         <axis xyz="0 1 0" />
-        <limit lower="-3.3155" upper="3.3155" effort="0" velocity="7.757"/>
+        <limit lower="-3.3155" upper="3.3155" effort="0" velocity="7.853"/>
     </joint>
 
     <joint name="${prefix}joint_5" type="revolute">
@@ -183,7 +183,7 @@
     </joint>
 
     <joint name="${prefix}end_effector" type="fixed">
-        <origin xyz="0 0.480 0.0" rpy="0.0 0.0 0.0" />
+        <origin xyz="0 0.450 0.0" rpy="0.0 0.0 0.0" />
         <parent link="${prefix}link_6" />
         <child link="${prefix}end_effector" />
     </joint>
@@ -207,19 +207,11 @@
     <link name="${prefix}tool0" />
     <joint name="${prefix}link_6-tool0" type="fixed">
       <!-- <origin xyz="0 0.020 0.0" rpy="0.0 ${-pi/2.0} ${-pi/2.0}" /> -->
-        <origin xyz="0 0.480 0.0" rpy="0.0 0.0 0.0" />
+        <origin xyz="0 0.450 -.03" rpy="0.0 0.0 0.0" />
       <parent link="${prefix}link_6" />
       <child link="${prefix}tool0" />
     </joint>
 
-        <!-- ROS-Industrial 'tool0' frame: all-zeros tool frame -->
-    <link name="${prefix}ee_link" />
-    <joint name="${prefix}ee_joint" type="fixed">
-      <!-- <origin xyz="0 0.020 0.0" rpy="0.0 ${-pi/2.0} ${-pi/2.0}" /> -->
-        <origin xyz="0 0.480 0.0" rpy="0.0 0.0 0.0" />
-      <parent link="${prefix}link_6" />
-      <child link="${prefix}ee_link" />
-    </joint>
 
 
   </xacro:macro>

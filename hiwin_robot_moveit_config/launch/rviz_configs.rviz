@@ -35,7 +35,14 @@ Panels:
     Property Tree Widget:
       Expanded: ~
       Splitter Ratio: 0.5
-    Tree Height: 801
+    Tree Height: 373
+  - Class: rviz/Displays
+    Help Height: 70
+    Name: Displays
+    Property Tree Widget:
+      Expanded: ~
+      Splitter Ratio: 0.5
+    Tree Height: 373
   - Class: rviz/Displays
     Help Height: 70
     Name: Displays
@@ -112,6 +119,11 @@ Visualization Manager:
             Alpha: 1
             Show Axes: false
             Show Trail: false
+          eef_link_0:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+            Value: true
           eef_link_1:
             Alpha: 1
             Show Axes: false
@@ -126,10 +138,6 @@ Visualization Manager:
             Show Axes: false
             Show Trail: false
             Value: true
-          manipulator/ee_link:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
           manipulator/end_effector:
             Alpha: 1
             Show Axes: false
@@ -235,6 +243,11 @@ Visualization Manager:
             Alpha: 1
             Show Axes: false
             Show Trail: false
+          eef_link_0:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+            Value: true
           eef_link_1:
             Alpha: 1
             Show Axes: false
@@ -249,10 +262,6 @@ Visualization Manager:
             Show Axes: false
             Show Trail: false
             Value: true
-          manipulator/ee_link:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
           manipulator/end_effector:
             Alpha: 1
             Show Axes: false
@@ -350,13 +359,13 @@ Visualization Manager:
           Value: false
         eef_finger_2:
           Value: false
+        eef_link_0:
+          Value: false
         eef_link_1:
           Value: false
         manipulator/base:
           Value: false
         manipulator/base_link:
-          Value: false
-        manipulator/ee_link:
           Value: false
         manipulator/end_effector:
           Value: false
@@ -395,17 +404,16 @@ Visualization Manager:
                   manipulator/link_4:
                     manipulator/link_5:
                       manipulator/link_6:
-                        manipulator/ee_link:
-                          {}
                         manipulator/end_effector:
                           {}
                         manipulator/flange:
                           eef_base_link:
-                            eef_link_1:
-                              eef_finger_1:
-                                {}
-                              eef_finger_2:
-                                {}
+                            eef_link_0:
+                              eef_link_1:
+                                eef_finger_1:
+                                  {}
+                                eef_finger_2:
+                                  {}
                         manipulator/tool0:
                           {}
       Update Interval: 0
@@ -442,9 +450,9 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.22979848086833954
+      Pitch: 0.4997982382774353
       Target Frame: <Fixed Frame>
-      Yaw: 4.369992256164551
+      Yaw: 1.5849764347076416
     Saved: ~
 Window Geometry:
   Displays:
@@ -458,9 +466,9 @@ Window Geometry:
     collapsed: false
   MotionPlanning - Trajectory Slider:
     collapsed: false
-  QMainWindow State: 000000ff00000000fd0000000100000000000001ca000003a2fc020000000afb000000100044006900730070006c006100790073000000003b00000157000000c700fffffffb0000000800480065006c00700000000342000000bb0000006e00fffffffb0000000a005600690065007700730000000130000000c0000000a000fffffffb0000000c00430061006d00650072006100000002ff000001610000000000000000fb0000001e004d006f00740069006f006e00200050006c0061006e006e0069006e00670100000374000001890000000000000000fb00000044004d006f00740069006f006e0050006c0061006e006e0069006e00670020002d0020005400720061006a006500630074006f0072007900200053006c0069006400650072000000003b0000005f0000001600000016fb0000001c004d006f00740069006f006e0050006c0061006e006e0069006e0067000000003b000003a20000016900fffffffb000000100044006900730070006c006100790073000000003b000003a2000000c700fffffffb000000100044006900730070006c006100790073000000003b000003a2000000c700fffffffb000000100044006900730070006c006100790073010000003b000003a2000000c700ffffff00000243000003a200000001000000020000000100000002fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
+  QMainWindow State: 000000ff00000000fd0000000100000000000001ca000003a2fc020000000bfb000000100044006900730070006c006100790073000000003b00000157000000c700fffffffb0000000800480065006c00700000000342000000bb0000006e00fffffffb0000000a005600690065007700730000000130000000c0000000a000fffffffb0000000c00430061006d00650072006100000002ff000001610000000000000000fb0000001e004d006f00740069006f006e00200050006c0061006e006e0069006e00670100000374000001890000000000000000fb00000044004d006f00740069006f006e0050006c0061006e006e0069006e00670020002d0020005400720061006a006500630074006f0072007900200053006c0069006400650072000000003b0000005f0000001600000016fb0000001c004d006f00740069006f006e0050006c0061006e006e0069006e0067000000003b000003a20000016900fffffffb000000100044006900730070006c006100790073000000003b000003a2000000c700fffffffb000000100044006900730070006c006100790073000000003b000003a2000000c700fffffffb000000100044006900730070006c006100790073000000003b000003a2000000c700fffffffb000000100044006900730070006c006100790073010000003b000003a2000000c700ffffff00000243000003a200000001000000020000000100000002fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
   Views:
     collapsed: false
   Width: 1043
-  X: 82
+  X: 2738
   Y: 27
