@@ -1,5 +1,0 @@
-<?xml version="1.0"?>
-<robot xmlns:xacro="http://ros.org/wiki/xacro" name="roller" >
-  <xacro:include filename="$(find paint_roller)\urdf\roller_macro.xacro" />
-  <xacro:gripper prefix="" />
-</robot>

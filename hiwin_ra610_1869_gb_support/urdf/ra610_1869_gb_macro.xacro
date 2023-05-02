@@ -3,7 +3,26 @@
 
 <xacro:macro name="manipulator" params="prefix">
     <!-- links: main serial chain -->
-    <link name="${prefix}base_link" >
+    
+    <link name ="${prefix}base_link">
+        <visual>
+            <oriign xyz="0.1651 0.1651 0" rpy="0 0 {-pi/2}"/>
+            <geometry>
+                <mesh filename="package://hiwin_ra610_1869_gb_support/meshes/pedestal.stl" scale="0.001 0.001 0.001"/>
+            </geometry>
+            <material name="LightGrey">
+                <color rgba="0.999 0.999 0.999 1.0"/>
+            </material>
+        </visual>
+        <collision>
+            <oriign xyz="0 0 0" rpy="{pi/2} 0 0"/>
+            <geometry>
+                <mesh filename="package://hiwin_ra610_1869_gb_support/meshes/pedestal.stl" scale="0.001 0.001 0.001"/>
+            </geometry>
+        </collision>
+    </link>
+
+    <link name="${prefix}mount_link" >
         <visual>
             <origin xyz="0 0 0" rpy="0 0 ${pi/2}"/>
             <geometry>
@@ -131,12 +150,18 @@
 
     <!-- end_effector frame -->
     <link name="${prefix}end_effector" />
+
+    <joint name="${prefix}joint_0" type="fixed">
+        <origin xyz="0 0 0.2413" rpy="0 0 0" />
+        <parent link="${prefix}base_link" />
+        <child link="${prefix}mount_link" />
+    </joint>
    
 
     <!-- joints: main serial chain -->
     <joint name="${prefix}joint_1" type="revolute">
         <origin xyz="0.0 0.0 0.1965" rpy="0.0 0.0 0.0" />
-        <parent link="${prefix}base_link" />
+        <parent link="${prefix}mount_link" />
         <child link="${prefix}link_1" />
         <axis xyz="0 0 1" />
         <limit lower="-2.967" upper="2.967" effort="0" velocity="3.35103"/>
@@ -206,8 +231,9 @@
     <!-- ROS-Industrial 'tool0' frame: all-zeros tool frame -->
     <link name="${prefix}tool0" />
     <joint name="${prefix}link_6-tool0" type="fixed">
-      <!-- <origin xyz="0 0.020 0.0" rpy="0.0 ${-pi/2.0} ${-pi/2.0}" /> -->
-        <origin xyz="0 0.450 -.03" rpy="0.0 0.0 0.0" />
+
+        <!-- <origin xyz="0 0.480 -.03" rpy="0.0 0.0 0.0" /> -->
+        <origin xyz="0 0.355 0" rpy="0.0 0.0 0.0" />
       <parent link="${prefix}link_6" />
       <child link="${prefix}tool0" />
     </joint>
