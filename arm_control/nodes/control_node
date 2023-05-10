@@ -100,7 +100,7 @@ class Control:
         # sleep
         rospy.sleep(1)
         # move to default position
-        go_home()
+        # go_home()
         # print current joint value
         get_current_joint_values()
         get_current_pose_values()
@@ -250,12 +250,6 @@ class Control:
 
             
 
-
-
-
-
-
-     
 
 
 
@@ -642,26 +636,7 @@ class Control:
         # Canvas
         canvas_size = (2.4, 0.02, 1.6)
         self.canvas = geometry_msgs.msg.PoseStamped()
-        self.canvas.header.frame_id = 'world'
-        self.canvas.pose.position.x = 0
-        self.canvas.pose.position.y = 1.7 - canvas_size[1]/2
-        self.canvas.pose.position.z = canvas_size[2]/2
-        # self.scene.add_box("canvas", self.canvas, canvas_size)
 
-        collision_canvas = moveit_msgs.msg.CollisionObject()
-        collision_canvas.id = 'canvas'
-        collision_canvas.header.frame_id = 'world'
-        box = shape_msgs.msg.SolidPrimitive()
-        box.type = box.BOX
-        box.dimensions = [canvas_size[0], canvas_size[1], canvas_size[2]]
-        collision_canvas.primitives.append(box)
-        pose = geometry_msgs.msg.PoseStamped()
-        pose.header.frame_id = 'world'
-        pose.pose.position.x = 0
-        pose.pose.position.y = 1.7 - canvas_size[1]/2
-        pose.pose.position.z = canvas_size[2]/2
-        collision_canvas.primitive_poses.append(pose.pose)
-        self.scene.add_object(collision_canvas)
 
 
 
